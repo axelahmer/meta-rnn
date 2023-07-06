@@ -22,10 +22,13 @@ def train_agent(agent, num_episodes=400, hidden_size=32, iters=4, gamma=0.99, in
     agent = agent(env.observation_space.shape[0], env.action_space.n, hidden_size, iters=iters).to(device)
     optimizer = optim.Adam(agent.parameters(), lr=lr)
 
-    # Initialize the list to hold the rewards for all episodes
+    # Initialize the lists to hold the rewards for all episodes
     all_episode_rewards = []
-    
-    episode_rewards_deque = deque(maxlen=10)
+    all_episode_raw_rewards = []
+
+    episode_return_deque = deque(maxlen=10)
+    episode_raw_return_deque = deque(maxlen=10)
+
     progress_bar = tqdm(range(num_episodes), position=0, leave=True)
 
     for episode in progress_bar:  # Add tqdm progress bar
@@ -36,7 +39,7 @@ def train_agent(agent, num_episodes=400, hidden_size=32, iters=4, gamma=0.99, in
             env = gym.make(env_name)
 
         state, _ = env.reset()
-        episode_states, episode_actions, episode_rewards, episode_intrinsic_rewards = [], [], [], []
+        episode_states, episode_actions, episode_rewards, episode_intrinsic_rewards, episode_raw_rewards = [], [], [], [], []
 
         while True:
             # Policy iteration
@@ -57,6 +60,7 @@ def train_agent(agent, num_episodes=400, hidden_size=32, iters=4, gamma=0.99, in
             episode_actions.append(action)
             episode_rewards.append(reward + intrinsic_reward)
             episode_intrinsic_rewards.append(intrinsic_reward)
+            episode_raw_rewards.append(reward)
 
             # Transition to the next state
             state = next_state
@@ -64,18 +68,19 @@ def train_agent(agent, num_episodes=400, hidden_size=32, iters=4, gamma=0.99, in
             if term or trunc:
                 break
 
-        # Store the total episode reward
+        # Store the total episode reward and raw reward
         total_reward = sum(episode_rewards)
-        all_episode_rewards.append(total_reward)
-        
-        # Add total reward to the deque
-        episode_rewards_deque.append(total_reward)
+        total_raw_reward = sum(episode_raw_rewards)
 
-        # Compute the mean of the deque to give the mean reward for the last 100 episodes
-        mean_reward = np.mean(episode_rewards_deque)
+        all_episode_rewards.append(total_reward)
+        all_episode_raw_rewards.append(total_raw_reward)
+
+        # Add total raw reward to the deque
+        episode_raw_return_deque.append(total_raw_reward)
+        episode_return_deque.append(total_reward)
 
         # Add the mean reward to the progress bar description
-        progress_bar.set_description(f'Episode {episode+1}/{num_episodes}, Mean Reward: {mean_reward:.2f}')
+        progress_bar.set_description(f'Episode {episode} | Mean R: {np.mean(episode_return_deque):.2f} | Mean raw R: {np.mean(episode_raw_return_deque):.2f}')
         
         # Computing returns for each time step
         returns = []
@@ -103,14 +108,14 @@ def train_agent(agent, num_episodes=400, hidden_size=32, iters=4, gamma=0.99, in
 
 # Define number of simulations and episodes
 simulations = 5
-num_episodes = 300
+num_episodes = 100
 
 # Create df to store rewards
 df = pd.DataFrame(columns=['Episode', 'Reward'])
 
 # Run simulations
 for i in range(simulations):
-    print(f'trial : {i+1}/5')
+    print(f'Trial : {i+1}/5')
     # You can replace RNNAgent with your agent class
     episode_rewards = train_agent(RNNAgent, num_episodes=num_episodes)
     df = pd.concat([df,pd.DataFrame({'Episode': range(1, num_episodes+1), 'Reward': episode_rewards})])
