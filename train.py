@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 
-def train_agent(agent, num_episodes=400, hidden_size=32, iters=4, gamma=0.99, intrinsic_reward_coef=0.1, lr=0.001, render=False):
+def train_agent(agent, num_episodes=400, hidden_size=64, iters=2, gamma=0.99, intrinsic_reward_coef=0.1, lr=0.001, render=False):
     # Initialize device
     device = torch.device('cpu')
 
@@ -54,6 +54,8 @@ def train_agent(agent, num_episodes=400, hidden_size=32, iters=4, gamma=0.99, in
             n = soft_confs.size(0)
             a = (torch.arange(0, n).float() / n)
             intrinsic_reward = -(soft_confs.cpu() * a).sum().item() * intrinsic_reward_coef
+
+            # print soft confs on 1 line
 
             # Storing episode data
             episode_states.append(state_tensor)
@@ -108,7 +110,7 @@ def train_agent(agent, num_episodes=400, hidden_size=32, iters=4, gamma=0.99, in
 
 # Define number of simulations and episodes
 simulations = 5
-num_episodes = 100
+num_episodes = 300
 
 # Create df to store rewards
 df = pd.DataFrame(columns=['Episode', 'Reward'])

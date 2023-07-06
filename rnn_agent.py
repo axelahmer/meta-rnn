@@ -37,7 +37,8 @@ class RNNAgent(nn.Module):
         confidences = []
         for _ in range(self.iters):
             output, confidence, hidden = self.rnn(input, hidden)
-            input = input + output
+            # input = input + output
+            input = output
             logits.append(input)
             confidences.append(confidence)
 
